@@ -1,0 +1,301 @@
+'use client';
+
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  type Node,
+  type Edge,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  type Connection,
+} from 'reactflow';
+import { Button } from '@/components/ui/button';
+import VisualHierarchy from '@/components/app';
+import { useToast } from '@/hooks/use-toast';
+import { Save, FolderOpen, Download, RotateCcw, Sun, Moon, UploadIcon } from 'lucide-react';
+import type { Section } from '@/types';
+import { getLayoutedElements } from '@/lib/layout';
+import 'reactflow/dist/style.css';
+import { useTheme } from '@/hooks/use-theme';
+
+
+const initialHomeSectionsData: Section[] = [
+    { id: 'hero', name: 'Hero' },
+    { id: 'features', name: 'Features' },
+    { id: 'testimonials', name: 'Testimonials' },
+    { id: 'cta', name: 'Call to Action' },
+    { id: 'footer', name: 'Footer' },
+];
+
+const initialNodesData: Node[] = [
+  { id: 'home', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Home', icon: 'Home' } },
+  { id: 'about', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'About Us', icon: 'Users' } },
+  { id: 'services', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Services', icon: 'Cog' } },
+  { id: 'blog', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Blog', icon: 'Newspaper' } },
+  { id: 'contact', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Contact', icon: 'Mail' } },
+  { id: 'service-detail-1', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Service Detail 1', icon: 'Info' } },
+  { id: 'service-detail-2', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Service Detail 2', icon: 'Info' } },
+];
+
+const initialEdgesData: Edge[] = [
+  { id: 'e-home-about', source: 'home', target: 'about', animated: true, style: { strokeWidth: 2 } },
+  { id: 'e-home-services', source: 'home', target: 'services', animated: true, style: { strokeWidth: 2 } },
+  { id: 'e-home-contact', source: 'home', target: 'contact', animated: true, style: { strokeWidth: 2 } },
+  { id: 'e-home-blog', source: 'home', target: 'blog', animated: true, style: { strokeWidth: 2 } },
+  { id: 'e-services-detail-1', source: 'services', target: 'service-detail-1', animated: true, style: { strokeWidth: 2 } },
+  { id: 'e-services-detail-2', source: 'services', target: 'service-detail-2', animated: true, style: { strokeWidth: 2 } },
+];
+
+
+export default function ComposerPage() {
+    const { toast } = useToast();
+    const { theme, toggleTheme } = useTheme();
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [homeSections, setHomeSections] = useState<Section[]>(initialHomeSectionsData);
+    const [sectionsMap, setSectionsMap] = useState<{ [id: string]: Section[] }>({
+      home: initialHomeSectionsData,
+    });
+    const [isClient, setIsClient] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const onConnect = useCallback(
+      (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+      [setEdges]
+    );
+
+    const handleLoad = useCallback((silent = false) => {
+        if (typeof window !== 'undefined') {
+            const savedData = localStorage.getItem('visual-hierarchy-data');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(data.nodes, data.edges);
+                setNodes(layoutedNodes);
+                setEdges(layoutedEdges);
+                setHomeSections(data.homeSections || initialHomeSectionsData);
+                if (!silent) {
+                    toast({
+                        title: 'Structure Loaded',
+                        description: 'Your page hierarchy has been loaded from local storage.',
+                    });
+                }
+            } else {
+                const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(initialNodesData, initialEdgesData);
+                setNodes(layoutedNodes);
+                setEdges(layoutedEdges);
+                setHomeSections(initialHomeSectionsData);
+            }
+        }
+    }, [setNodes, setEdges, toast]);
+    
+    useEffect(() => {
+        setIsClient(true);
+        handleLoad(true);
+    }, [handleLoad]);
+
+
+    const handleSave = useCallback(() => {
+        if (typeof window !== 'undefined') {
+            const data = { nodes, edges, sectionsMap };
+            localStorage.setItem('visual-hierarchy-data', JSON.stringify(data));
+            toast({
+                title: 'Structure Saved',
+                description: 'Your page hierarchy has been saved to local storage.',
+                style: {
+                    backgroundColor: 'hsl(var(--accent))',
+                    color: 'hsl(var(--accent-foreground))',
+                    border: '1px solid hsl(var(--accent-foreground))'
+                }
+            });
+        }
+    }, [nodes, edges, sectionsMap, toast]);
+
+    
+    const handleReset = useCallback(() => {
+        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(initialNodesData, initialEdgesData);
+        setNodes(layoutedNodes);
+        setEdges(layoutedEdges);
+        setHomeSections(initialHomeSectionsData);
+        toast({
+            title: 'Structure Reset',
+            description: 'The hierarchy has been reset to the default structure.',
+        });
+    }, [setNodes, setEdges, toast]);
+
+    const handleExport = useCallback(() => {
+        const data = { nodes, edges, homeSections, sectionsMap }; // <-- include sectionsMap
+        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+        const link = document.createElement('a');
+        link.href = jsonString;
+        link.download = 'page-hierarchy.json';
+        link.click();
+        toast({
+            title: 'Exported to JSON',
+            description: 'Your page hierarchy has been downloaded.',
+        });
+    }, [nodes, edges, homeSections, sectionsMap, toast]);
+
+    const setNodeSections = (id: string, sections: Section[]) => {
+      setSectionsMap((prev) => ({ ...prev, [id]: sections }));
+    };
+
+    const getAllDescendantIds = (parentId: string, edges: Edge[]): string[] => {
+      const directChildren = edges.filter(e => e.source === parentId).map(e => e.target);
+      return directChildren.reduce(
+        (acc, childId) => [...acc, childId, ...getAllDescendantIds(childId, edges)],
+        [] as string[]
+      );
+    };
+
+    const enrichedNodes = useMemo(() => {
+      return nodes.map(node => ({
+        ...node,
+        type: 'pageNode',
+        data: {
+          ...node.data,
+          sections: sectionsMap[node.id] || [],
+          setSections: (sections: Section[]) => setNodeSections(node.id, sections),
+          onAddPage: (name: string) => {
+            const newNodeId = name.trim().toLowerCase().replace(/\s+/g, '-');
+            if (nodes.find(n => n.id === newNodeId)) {
+              toast({
+                title: 'Error',
+                description: 'A page with this name already exists.',
+                variant: 'destructive',
+              });
+              return;
+            }
+            const newNode: Node = {
+              id: newNodeId,
+              type: 'pageNode',
+              position: { x: 0, y: 0 },
+              data: { label: name.trim(), icon: 'Default' },
+            };
+            const newEdge: Edge = {
+              id: `e-${node.id}-${newNodeId}`,
+              source: node.id,
+              target: newNodeId,
+              animated: true,
+              style: { strokeWidth: 2 },
+            };
+            const newNodes = [...nodes, newNode];
+            const newEdges = [...edges, newEdge];
+            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(newNodes, newEdges);
+            setNodes(layoutedNodes);
+            setEdges(layoutedEdges);
+            setSectionsMap((prev) => ({ ...prev, [newNodeId]: [] }));
+            toast({
+              title: 'Page Added',
+              description: `The page "${name.trim()}" has been added.`,
+            });
+          },
+          onDeletePage: node.id === 'home'
+            ? undefined
+            : () => {
+                // Recursively find all descendants
+                const toDelete = [node.id, ...getAllDescendantIds(node.id, edges)];
+                // Remove nodes and edges
+                setNodes(nodes.filter(n => !toDelete.includes(n.id)));
+                setEdges(edges.filter(e => !toDelete.includes(e.source) && !toDelete.includes(e.target)));
+                setSectionsMap(prev => {
+                  const updated = { ...prev };
+                  toDelete.forEach(id => delete updated[id]);
+                  return updated;
+                });
+                toast({
+                  title: 'Page Deleted',
+                  description: `Page and its child pages have been deleted.`,
+                  variant: 'destructive',
+                });
+              }
+        }
+      })
+    );
+    }, [nodes, edges, sectionsMap, setNodes, setEdges, toast]);
+
+    const handleLoadFromFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target?.result as string);
+                const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(data.nodes, data.edges);
+                setNodes(layoutedNodes);
+                setEdges(layoutedEdges);
+                setHomeSections(data.homeSections || initialHomeSectionsData);
+                setSectionsMap(data.sectionsMap || {});
+                toast({
+                    title: 'Structure Loaded',
+                    description: 'Your page hierarchy has been loaded from file.',
+                });
+            } catch {
+                toast({
+                    title: 'Invalid File',
+                    description: 'Could not parse the selected JSON file.',
+                    variant: 'destructive',
+                });
+            }
+        };
+        reader.readAsText(file);
+        // Reset input so same file can be loaded again if needed
+        e.target.value = '';
+    }, [setNodes, setEdges, setHomeSections, setSectionsMap, toast]);
+
+    if (!isClient) {
+        return <div className="flex h-screen w-screen items-center justify-center">Loading Composer...</div>;
+    }
+
+    return (
+        <div className="flex flex-col h-screen w-screen bg-background font-body">
+            <header className="p-4 border-b flex justify-between items-center bg-card/80 backdrop-blur-sm z-10">
+                <h1 className="text-2xl font-bold text-primary">Visual Hierarchy Composer</h1>
+                <div className="flex gap-2">
+                    <Button onClick={handleSave} variant="secondary"><Save className="mr-2 h-4 w-4" /> Save</Button>
+                    <div className="relative">
+                        <Button
+                            variant="outline"
+                            onClick={() => handleLoad(false)}
+                            className="mr-1"
+                        >
+                            <FolderOpen className="mr-2 h-4 w-4" /> Load
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={() => fileInputRef.current?.click()}
+                            title="Load from file"
+                        >
+                            <UploadIcon className="mr-2 h-4 w-4" /> From File
+                        </Button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="application/json"
+                            className="hidden"
+                            onChange={handleLoadFromFile}
+                        />
+                    </div>
+                    <Button onClick={handleReset} variant="ghost"><RotateCcw className="mr-2 h-4 w-4" /> Reset</Button>
+                    <Button onClick={handleExport}><Download className="mr-2 h-4 w-4" /> Export JSON</Button>
+                    <Button
+                        onClick={toggleTheme}
+                        variant="ghost"
+                        title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                        className="rounded-full"
+                    >
+                        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    </Button>
+                </div>
+            </header>
+            <main className="flex-grow">
+                <VisualHierarchy
+                    nodes={enrichedNodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                />
+            </main>
+        </div>
+    );
+}
