@@ -1,6 +1,8 @@
 
 [![codecov](https://codecov.io/gh/dalroy44/Visual-Page-Hierarchy-Editor/graph/badge.svg?token=HIOOIRSC9B)](https://codecov.io/gh/dalroy44/Visual-Page-Hierarchy-Editor)
 
+![Vercel Deploy](https://deploy-badge.vercel.app/vercel/visual-page-hierarchy-editor-eight)
+
 # Visual-Page-Hierarchy-Editor
 
 This is a Next.js application that allows you to visually compose and reorder your page hierarchy.
