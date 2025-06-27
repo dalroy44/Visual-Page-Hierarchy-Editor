@@ -4,7 +4,6 @@ import React, { useMemo } from 'react';
 import ReactFlow, {
   Controls,
   Background,
-  MiniMap,
   type Node,
   type Edge,
   type OnNodesChange,

@@ -5,7 +5,7 @@ import { Handle, Position, type NodeProps } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { LucideProps } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
-import HomeSections from './home-sections';
+import SectionList from './section-list';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, LayoutList, Trash2 } from 'lucide-react';
@@ -48,7 +48,7 @@ const PageNode = ({ data, id }: NodeProps<PageNodeData>) => {
   return (
     <Card className="w-[250px] shadow-lg border-primary/50">
       <Handle type="target" position={Position.Top} className="!bg-primary w-4 !-ml-2" />
-      <CardHeader className="p-3 bg-primary/10 flex flex-row items-center justify-between custom-drag-handle cursor-move">
+      <CardHeader className="p-3 bg-primary/10 flex flex-row items-center justify-between custom-drag-handle cursor-grab">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Icon className="w-5 h-5 text-primary" />
           {data.label}
@@ -126,12 +126,12 @@ const PageNode = ({ data, id }: NodeProps<PageNodeData>) => {
       )}
       
       <CardContent className="p-3 pt-2">
-        {data.sections.length === 0 ? (
+        {(data.sections || []).length === 0 ? (
           <div className="text-muted-foreground text-sm text-center py-4">
             No sections yet.
           </div>
         ) : (
-          <HomeSections
+          <SectionList
             sections={data.sections}
             setSections={data.setSections}
             onDeleteSection={data.onDeleteSection}

@@ -17,13 +17,13 @@ import {
 import { SortableSection } from './sortable-section';
 import type { Section } from '@/types';
 
-interface HomeSectionsProps {
+interface SectionListProps {
   sections: Section[];
   setSections: (sections: Section[]) => void;
   onDeleteSection?: (sectionId: string) => void;
 }
 
-export default function HomeSections({ sections, setSections, onDeleteSection }: HomeSectionsProps) {
+export default function SectionList({ sections, setSections, onDeleteSection }: SectionListProps) {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
