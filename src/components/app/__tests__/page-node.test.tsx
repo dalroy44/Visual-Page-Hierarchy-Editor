@@ -24,13 +24,18 @@ jest.mock('lucide-react', () => {
     };
 });
 
-// Mock HomeSections component
-jest.mock('../home-sections', () => {
+// Mock SectionList component
+jest.mock('../section-list', () => {
     return {
         __esModule: true,
-        default: ({ sections }: { sections: Section[] }) => (
-            <div data-testid="home-sections-mock">
-                {sections.map(s => <div key={s.id}>{s.name}</div>)}
+        default: ({ sections, onDeleteSection }: { sections: Section[], onDeleteSection?: (id: string) => void }) => (
+            <div data-testid="section-list-mock">
+                {sections.map(s => (
+                    <div key={s.id}>
+                        {s.name}
+                        <button onClick={() => onDeleteSection?.(s.id)}>Delete {s.name}</button>
+                    </div>
+                ))}
             </div>
         ),
     };
@@ -42,6 +47,7 @@ describe('PageNode', () => {
   const mockOnAddPage = jest.fn();
   const mockOnDeletePage = jest.fn();
   const mockOnAddSection = jest.fn();
+  const mockOnDeleteSection = jest.fn();
 
   const defaultProps: NodeProps<PageNodeData> = {
     id: 'test-node',
@@ -53,6 +59,7 @@ describe('PageNode', () => {
       onAddPage: mockOnAddPage,
       onDeletePage: mockOnDeletePage,
       onAddSection: mockOnAddSection,
+      onDeleteSection: mockOnDeleteSection,
     },
     sourcePosition: Position.Bottom,
     targetPosition: Position.Top,
@@ -92,41 +99,85 @@ describe('PageNode', () => {
     expect(screen.getByTestId('icon-users')).toBeInTheDocument();
   });
 
+  it('falls back to default icon for invalid icon name', () => {
+    renderInFlow({
+        ...defaultProps,
+        data: {
+            ...defaultProps.data,
+            icon: 'InvalidIconName'
+        }
+    });
+    expect(screen.getByTestId('icon-file')).toBeInTheDocument();
+  });
+
   it('shows placeholder text when there are no sections', () => {
     renderInFlow(defaultProps);
     expect(screen.getByText(/No sections yet/)).toBeInTheDocument();
   });
   
-  it('shows and handles adding a new section', () => {
+  it('toggles the add section form and adds a section on click', () => {
     renderInFlow(defaultProps);
-
     const addSectionButton = screen.getByTitle('Add Section');
-    fireEvent.click(addSectionButton);
+    
+    // Form is initially hidden
+    expect(screen.queryByPlaceholderText('New section name')).not.toBeInTheDocument();
 
+    // Show form
+    fireEvent.click(addSectionButton);
     const input = screen.getByPlaceholderText('New section name');
     const addButton = screen.getByText('Add Section', { selector: 'button' });
     expect(input).toBeInTheDocument();
 
+    // Add section
     fireEvent.change(input, { target: { value: 'New Test Section' } });
     fireEvent.click(addButton);
-
     expect(mockOnAddSection).toHaveBeenCalledWith('New Test Section');
+
+    // Hide form
+    fireEvent.click(addSectionButton);
+    expect(screen.queryByPlaceholderText('New section name')).not.toBeInTheDocument();
+  });
+
+  it('adds a section on Enter key press', () => {
+    renderInFlow(defaultProps);
+    fireEvent.click(screen.getByTitle('Add Section'));
+    
+    const input = screen.getByPlaceholderText('New section name');
+    fireEvent.change(input, { target: { value: 'Enter Key Section' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    
+    expect(mockOnAddSection).toHaveBeenCalledWith('Enter Key Section');
   });
   
-  it('shows and handles adding a new page', () => {
+  it('toggles the add page form and adds a page on click', () => {
     renderInFlow(defaultProps);
-
     const addPageButton = screen.getByTitle('Add Page');
-    fireEvent.click(addPageButton);
+    
+    // Form is initially hidden
+    expect(screen.queryByPlaceholderText('Page name')).not.toBeInTheDocument();
 
+    // Show form
+    fireEvent.click(addPageButton);
     const input = screen.getByPlaceholderText('Page name');
     const addButton = screen.getByText('Add', { selector: 'button' });
     expect(input).toBeInTheDocument();
 
+    // Add page
     fireEvent.change(input, { target: { value: 'New Sub Page' } });
     fireEvent.click(addButton);
-
     expect(mockOnAddPage).toHaveBeenCalledWith('New Sub Page');
+    expect(screen.queryByPlaceholderText('Page name')).not.toBeInTheDocument(); // Form should hide after adding
+  });
+
+  it('adds a page on Enter key press', () => {
+    renderInFlow(defaultProps);
+    fireEvent.click(screen.getByTitle('Add Page'));
+
+    const input = screen.getByPlaceholderText('Page name');
+    fireEvent.change(input, { target: { value: 'Enter Key Page' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    
+    expect(mockOnAddPage).toHaveBeenCalledWith('Enter Key Page');
   });
 
   it('calls onDeletePage when delete button is clicked', () => {
@@ -138,7 +189,7 @@ describe('PageNode', () => {
     expect(mockOnDeletePage).toHaveBeenCalledTimes(1);
   });
 
-  it('renders sections when they are passed in data', () => {
+  it('renders sections and handles deletion', () => {
     const sections = [
         { id: 'section-1', name: 'Section One' },
         { id: 'section-2', name: 'Section Two' },
@@ -152,21 +203,48 @@ describe('PageNode', () => {
     };
     renderInFlow(propsWithSections);
 
-    expect(screen.getByTestId('home-sections-mock')).toBeInTheDocument();
+    expect(screen.getByTestId('section-list-mock')).toBeInTheDocument();
     expect(screen.getByText('Section One')).toBeInTheDocument();
-    expect(screen.getByText('Section Two')).toBeInTheDocument();
+    
+    // Test that the delete button in the mocked child works
+    fireEvent.click(screen.getByText('Delete Section One'));
+    expect(mockOnDeleteSection).toHaveBeenCalledWith('section-1');
   });
 
-  it('does not render delete button for the home node', () => {
-    const homeProps = { ...defaultProps, id: 'home', data: { ...defaultProps.data, onDeletePage: undefined } };
-    renderInFlow(homeProps);
-    expect(screen.queryByTitle('Delete Page')).not.toBeInTheDocument();
+  describe('Home Node behavior', () => {
+    const homeProps = {
+        ...defaultProps, 
+        id: 'home', 
+        data: { 
+            ...defaultProps.data,
+            label: 'Home',
+            icon: 'Home',
+            onDeletePage: undefined, // Home can't be deleted
+            sections: [{ id: 'hero', name: 'Hero' }],
+        } 
+    };
+    
+    it('does not render delete button for the home node', () => {
+        renderInFlow(homeProps);
+        expect(screen.queryByTitle('Delete Page')).not.toBeInTheDocument();
+      });
+    
+      it('always shows the add section form for the home node', () => {
+        renderInFlow(homeProps);
+        expect(screen.getByPlaceholderText('New section name')).toBeInTheDocument();
+        expect(screen.queryByTitle('Add Section')).not.toBeInTheDocument();
+      });
+
+      it('adds a section from the always-on form', () => {
+        renderInFlow(homeProps);
+        const input = screen.getByPlaceholderText('New section name');
+        const addButton = screen.getByText('Add Section', { selector: 'button' });
+        
+        fireEvent.change(input, { target: { value: 'Home Section' } });
+        fireEvent.click(addButton);
+        
+        expect(mockOnAddSection).toHaveBeenCalledWith('Home Section');
+      });
   });
 
-  it('always shows the add section form for the home node', () => {
-    const homeProps = { ...defaultProps, id: 'home' };
-    renderInFlow(homeProps);
-    expect(screen.getByPlaceholderText('New section name')).toBeInTheDocument();
-    expect(screen.queryByTitle('Add Section')).not.toBeInTheDocument();
-  });
 });

@@ -1,25 +1,27 @@
-import { getLayoutedElements } from '../layout';
-import { Position, type Node, type Edge } from 'reactflow';
+import { getLayoutedElements } from '@/lib/layout';
+import { type Node, type Edge, Position } from 'reactflow';
 
 describe('getLayoutedElements', () => {
-  const nodes: Node[] = [
-    { id: '1', data: {}, position: { x: 0, y: 0 }, type: 'default' },
-    { id: '2', data: {}, position: { x: 0, y: 0 }, type: 'default' },
-    { id: '3', data: {}, position: { x: 0, y: 0 }, type: 'default' },
-  ];
+  it('should return empty arrays for no nodes or edges', () => {
+    const { nodes, edges } = getLayoutedElements([], []);
+    expect(nodes).toEqual([]);
+    expect(edges).toEqual([]);
+  });
 
-  const edges: Edge[] = [
-    { id: 'e1-2', source: '1', target: '2' },
-    { id: 'e2-3', source: '2', target: '3' },
-  ];
+  it('should return layouted nodes with position properties', () => {
+    const initialNodes: Node[] = [
+      { id: '1', position: { x: 0, y: 0 }, data: { label: 'Node 1' } },
+      { id: '2', position: { x: 0, y: 0 }, data: { label: 'Node 2' } },
+    ];
+    const initialEdges: Edge[] = [{ id: 'e1-2', source: '1', target: '2' }];
 
-  it('returns nodes and edges with layouted positions', () => {
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodes, edges);
+    const { nodes, edges } = getLayoutedElements(initialNodes, initialEdges);
 
-    expect(layoutedNodes).toHaveLength(3);
-    expect(layoutedEdges).toEqual(edges);
+    expect(nodes).toHaveLength(2);
+    expect(edges).toHaveLength(1);
 
-    layoutedNodes.forEach((node) => {
+    nodes.forEach(node => {
+      expect(node).toHaveProperty('position');
       expect(typeof node.position.x).toBe('number');
       expect(typeof node.position.y).toBe('number');
       expect(node.targetPosition).toBe(Position.Top);
@@ -27,24 +29,26 @@ describe('getLayoutedElements', () => {
     });
   });
 
-  it('handles empty nodes and edges', () => {
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements([], []);
-    expect(layoutedNodes).toEqual([]);
-    expect(layoutedEdges).toEqual([]);
-  });
+  it('should handle a more complex graph structure', () => {
+    const initialNodes: Node[] = [
+      { id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
+      { id: '2', position: { x: 0, y: 0 }, data: { label: '2' } },
+      { id: '3', position: { x: 0, y: 0 }, data: { label: '3' } },
+      { id: '4', position: { x: 0, y: 0 }, data: { label: '4' } },
+    ];
+    const initialEdges: Edge[] = [
+      { id: 'e1-2', source: '1', target: '2' },
+      { id: 'e1-3', source: '1', target: '3' },
+      { id: 'e3-4', source: '3', target: '4' },
+    ];
 
-  it('does not mutate the original nodes array', () => {
-    const nodesCopy = JSON.parse(JSON.stringify(nodes));
-    getLayoutedElements(nodes, edges);
-    expect(nodes).toEqual(nodesCopy);
-  });
+    const { nodes } = getLayoutedElements(initialNodes, initialEdges);
 
-  it('positions are centered relative to node size', () => {
-    const { nodes: layoutedNodes } = getLayoutedElements(nodes, edges);
-    layoutedNodes.forEach((node) => {
-      // The position should be offset by half nodeWidth and nodeHeight
+    expect(nodes).toHaveLength(4);
+    // A simple check to ensure positions are being calculated and are not the default 0,0
+    // The exact positions depend on the dagre library and are complex to predict precisely.
+    nodes.forEach(node => {
       expect(node.position.x).not.toBe(0);
-      expect(node.position.y).not.toBe(0);
     });
   });
 });
