@@ -9,7 +9,7 @@ import HomeSections from './home-sections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, LayoutList, Trash2 } from 'lucide-react';
-import { Section } from '@/types';
+import type { Section, PageNodeData } from '@/types';
 
 const iconMap: { [key: string]: React.ComponentType<LucideProps> } = {
   Users: LucideIcons.Users,
@@ -23,17 +23,8 @@ const iconMap: { [key: string]: React.ComponentType<LucideProps> } = {
   MessageSquare: LucideIcons.MessageSquare,
 };
 
-interface PageNodeData {
-  label: string;
-  icon: string;
-  sections: Section[];
-  setSections: (sections: Section[]) => void;
-  onAddPage?: (name: string) => void;
-  onDeletePage?: () => void;
-}
-
 const PageNode = ({ data }: NodeProps<PageNodeData>) => {
-  const Icon = iconMap[data.icon] || iconMap.Default;
+  const Icon = iconMap[data.icon || 'Default'] || iconMap.Default;
   const [showAddPage, setShowAddPage] = useState(false);
   const [showAddSection, setShowAddSection] = useState(false);
   const [newPageName, setNewPageName] = useState('');
@@ -43,7 +34,6 @@ const PageNode = ({ data }: NodeProps<PageNodeData>) => {
     if (data.onAddPage && newPageName.trim()) {
       data.onAddPage(newPageName.trim());
       setNewPageName('');
-      setShowAddPage(false);
     }
   };
 
@@ -52,7 +42,6 @@ const PageNode = ({ data }: NodeProps<PageNodeData>) => {
     const newSectionId = newSectionName.trim().toLowerCase().replace(/\s+/g, '-');
     if (data.sections.find(s => s.id === newSectionId)) {
       setNewSectionName('');
-      setShowAddSection(false);
       return;
     }
     const newSection: Section = {
@@ -61,13 +50,12 @@ const PageNode = ({ data }: NodeProps<PageNodeData>) => {
     };
     data.setSections([...data.sections, newSection]);
     setNewSectionName('');
-    setShowAddSection(false);
   };
 
   return (
     <Card className="w-[250px] shadow-lg border-primary/50">
       <Handle type="target" position={Position.Top} className="!bg-primary w-4 !-ml-2" />
-      <CardHeader className="p-3 bg-primary/10 flex flex-row items-center justify-between">
+      <CardHeader className="p-3 bg-primary/10 flex flex-row items-center justify-between custom-drag-handle cursor-move">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Icon className="w-5 h-5 text-primary" />
           {data.label}
@@ -149,6 +137,7 @@ const PageNode = ({ data }: NodeProps<PageNodeData>) => {
           <HomeSections
             sections={data.sections}
             setSections={data.setSections}
+            onDeleteSection={data.onDeleteSection}
           />
         )}
       </CardContent>

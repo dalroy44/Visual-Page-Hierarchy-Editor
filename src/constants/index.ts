@@ -12,7 +12,7 @@ export const initialHomeSectionsData: Section[] = [
 ];
 
 export const initialNodesData: Node[] = [
-  { id: 'home', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Home', icon: 'Home' } },
+  { id: 'home', type: 'homePageNode', position: { x: 0, y: 0 }, data: { label: 'Home' } },
   { id: 'about', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'About Us', icon: 'Users' } },
   { id: 'services', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Services', icon: 'Cog' } },
   { id: 'blog', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Blog', icon: 'Newspaper' } },

@@ -7,11 +7,12 @@ export interface Section {
 
 export interface PageNodeData {
   label: string;
-  icon: string;
-  sections?: Section[];
-  setSections?: (sections: Section[]) => void;
+  icon?: string;
+  sections: Section[];
+  setSections: (sections: Section[]) => void;
   onAddPage?: (name: string) => void;
   onDeletePage?: () => void;
+  onDeleteSection?: (sectionId: string) => void;
 }
 
 export interface EnrichedNode extends Node {
@@ -21,6 +22,5 @@ export interface EnrichedNode extends Node {
 export interface HierarchyData {
   nodes: Node[];
   edges: Edge[];
-  homeSections?: Section[];
   sectionsMap?: { [id: string]: Section[] };
 }

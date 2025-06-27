@@ -18,7 +18,6 @@ export const useHierarchyLogic = () => {
   const { toast } = useToast();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [homeSections, setHomeSections] = useState<Section[]>(initialHomeSectionsData);
   const [sectionsMap, setSectionsMap] = useState<{ [id: string]: Section[] }>({
     home: initialHomeSectionsData,
   });
@@ -40,8 +39,7 @@ export const useHierarchyLogic = () => {
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(savedData.nodes, savedData.edges);
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
-      setHomeSections(savedData.homeSections || initialHomeSectionsData);
-      setSectionsMap(savedData.sectionsMap || {});
+      setSectionsMap(savedData.sectionsMap || { home: initialHomeSectionsData });
       if (!silent) {
         toast({
           title: 'Structure Loaded',
@@ -50,9 +48,13 @@ export const useHierarchyLogic = () => {
       }
     } else {
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(initialNodesData, initialEdgesData);
+      const initialSections = initialNodesData.reduce((acc, node) => {
+        acc[node.id] = node.id === 'home' ? initialHomeSectionsData : [];
+        return acc;
+      }, {} as { [id: string]: Section[] });
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
-      setHomeSections(initialHomeSectionsData);
+      setSectionsMap(initialSections);
     }
   }, [setNodes, setEdges, toast]);
 
@@ -72,10 +74,13 @@ export const useHierarchyLogic = () => {
 
   const handleReset = useCallback(() => {
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(initialNodesData, initialEdgesData);
+    const initialSections = initialNodesData.reduce((acc, node) => {
+      acc[node.id] = node.id === 'home' ? initialHomeSectionsData : [];
+      return acc;
+    }, {} as { [id: string]: Section[] });
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
-    setHomeSections(initialHomeSectionsData);
-    setSectionsMap({ home: initialHomeSectionsData });
+    setSectionsMap(initialSections);
     toast({
       title: 'Structure Reset',
       description: 'The hierarchy has been reset to the default structure.',
@@ -83,13 +88,13 @@ export const useHierarchyLogic = () => {
   }, [setNodes, setEdges, toast]);
 
   const handleExport = useCallback(() => {
-    const data = { nodes, edges, homeSections, sectionsMap };
+    const data = { nodes, edges, sectionsMap };
     downloadJsonFile(data, 'page-hierarchy.json');
     toast({
       title: 'Exported to JSON',
       description: 'Your page hierarchy has been downloaded.',
     });
-  }, [nodes, edges, homeSections, sectionsMap, toast]);
+  }, [nodes, edges, sectionsMap, toast]);
 
   const handleLoadFromFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,8 +105,7 @@ export const useHierarchyLogic = () => {
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(data.nodes, data.edges);
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
-      setHomeSections(data.homeSections || initialHomeSectionsData);
-      setSectionsMap(data.sectionsMap || {});
+      setSectionsMap(data.sectionsMap || { home: initialHomeSectionsData });
       toast({
         title: 'Structure Loaded',
         description: 'Your page hierarchy has been loaded from file.',
@@ -115,7 +119,7 @@ export const useHierarchyLogic = () => {
     }
     // Reset input so same file can be loaded again if needed
     e.target.value = '';
-  }, [setNodes, setEdges, setHomeSections, setSectionsMap, toast]);
+  }, [setNodes, setEdges, setSectionsMap, toast]);
 
   const addPage = useCallback((parentNodeId: string, name: string) => {
     const newNodeId = generateNodeId(name);
@@ -173,19 +177,32 @@ export const useHierarchyLogic = () => {
     });
   }, [nodes, edges, setNodes, setEdges, toast]);
 
+  const deleteSection = useCallback((nodeId: string, sectionId: string) => {
+    setSectionsMap(prev => {
+        const currentSections = prev[nodeId] || [];
+        const updatedSections = currentSections.filter(s => s.id !== sectionId);
+        return { ...prev, [nodeId]: updatedSections };
+    });
+    toast({
+        title: 'Section Deleted',
+        description: `The section has been deleted.`,
+    });
+  }, [setSectionsMap, toast]);
+
   const enrichedNodes = useMemo(() => {
     return nodes.map(node => ({
       ...node,
-      type: 'pageNode',
       data: {
         ...node.data,
+        dragHandle: '.custom-drag-handle',
         sections: sectionsMap[node.id] || [],
         setSections: (sections: Section[]) => setNodeSections(node.id, sections),
+        onDeleteSection: (sectionId: string) => deleteSection(node.id, sectionId),
         onAddPage: (name: string) => addPage(node.id, name),
         onDeletePage: node.id === 'home' ? undefined : () => deletePage(node.id)
       }
     })) as EnrichedNode[];
-  }, [nodes, sectionsMap, addPage, deletePage]);
+  }, [nodes, sectionsMap, addPage, deletePage, deleteSection]);
 
   useEffect(() => {
     setIsClient(true);
@@ -196,8 +213,6 @@ export const useHierarchyLogic = () => {
     // State
     nodes: enrichedNodes,
     edges,
-    homeSections,
-    sectionsMap,
     isClient,
     fileInputRef,
     

@@ -20,9 +20,10 @@ import type { Section } from '@/types';
 interface HomeSectionsProps {
   sections: Section[];
   setSections: (sections: Section[]) => void;
+  onDeleteSection?: (sectionId: string) => void;
 }
 
-export default function HomeSections({ sections, setSections }: HomeSectionsProps) {
+export default function HomeSections({ sections, setSections, onDeleteSection }: HomeSectionsProps) {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -45,7 +46,12 @@ export default function HomeSections({ sections, setSections }: HomeSectionsProp
             <SortableContext items={sections} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
                     {sections.map((section) => (
-                        <SortableSection key={section.id} id={section.id} name={section.name} />
+                        <SortableSection 
+                            key={section.id} 
+                            id={section.id} 
+                            name={section.name} 
+                            onDelete={(id) => onDeleteSection?.(id)}
+                        />
                     ))}
                 </div>
             </SortableContext>

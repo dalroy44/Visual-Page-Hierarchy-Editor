@@ -5,19 +5,12 @@ import { Handle, Position, type NodeProps } from 'reactflow';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Home, Plus } from 'lucide-react';
 import HomeSections from './home-sections';
-import type { Section } from '@/types';
+import type { Section, PageNodeData } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
-interface HomePageNodeData {
-  label: string;
-  sections: Section[];
-  setSections: (sections: Section[]) => void;
-  onAddPage?: (name: string) => void;
-}
-
-const HomePageNode = ({ data }: NodeProps<HomePageNodeData>) => {
+const HomePageNode = ({ data }: NodeProps<PageNodeData>) => {
   const { toast } = useToast();
   const [newSectionName, setNewSectionName] = useState('');
   const [showAddPage, setShowAddPage] = useState(false);
@@ -80,7 +73,7 @@ const HomePageNode = ({ data }: NodeProps<HomePageNodeData>) => {
   return (
     <Card className="w-[250px] shadow-lg border-primary/50">
       <Handle type="target" position={Position.Top} className="!bg-primary w-4 !-ml-2" />
-      <CardHeader className="p-3 bg-primary/10 flex flex-row items-center justify-between">
+      <CardHeader className="p-3 bg-primary/10 flex flex-row items-center justify-between custom-drag-handle cursor-move">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Home className="w-5 h-5 text-primary" />
           {data.label}
@@ -115,7 +108,11 @@ const HomePageNode = ({ data }: NodeProps<HomePageNodeData>) => {
       <CardContent className="p-3 pt-2">
         <p className="text-xs text-muted-foreground mb-2">Reorder sections:</p>
         {data.sections && data.setSections && (
-          <HomeSections sections={data.sections} setSections={data.setSections} />
+          <HomeSections 
+            sections={data.sections} 
+            setSections={data.setSections} 
+            onDeleteSection={data.onDeleteSection}
+          />
         )}
         <div className="mt-4 space-y-2">
             <p className="text-xs text-muted-foreground">Add new section:</p>
