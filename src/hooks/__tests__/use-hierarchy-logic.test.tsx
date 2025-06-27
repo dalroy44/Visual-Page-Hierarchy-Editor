@@ -28,6 +28,7 @@ describe('useHierarchyLogic', () => {
     mockUseToast.mockReturnValue({ toast: mockToast });
     mockGetLayoutedElements.mockImplementation((nodes, edges) => ({ nodes, edges }));
     jest.spyOn(hierarchy, 'generateNodeId').mockImplementation(name => name.trim().toLowerCase().replace(/\s+/g, '-'));
+    mockStorageService.load.mockReturnValue(null); // Ensure storage is empty before each test
   });
 
   afterEach(() => {
@@ -91,19 +92,22 @@ describe('useHierarchyLogic', () => {
   });
 
   describe('addPage', () => {
-    it('should add a new page and a corresponding edge', () => {
-      const { result } = renderHook(() => useHierarchyLogic());
-      const initialNodeCount = result.current.nodes.length;
-
-      act(() => {
-        const homeNode = result.current.nodes.find(n => n.id === 'home');
-        homeNode?.data.onAddPage?.('New Awesome Page');
+      it('should add a new page and a corresponding edge', () => {
+        // Ensure storage is empty for this test
+        mockStorageService.load.mockReturnValue(null);
+  
+        const { result } = renderHook(() => useHierarchyLogic());
+        const initialNodeCount = result.current.nodes.length;
+  
+        act(() => {
+          const homeNode = result.current.nodes.find(n => n.id === 'home');
+          homeNode?.data.onAddPage?.('New Awesome Page');
+        });
+  
+        expect(result.current.nodes).toHaveLength(initialNodeCount + 1);
+        expect(result.current.nodes.find(n => n.id === 'new-awesome-page')).toBeDefined();
+        expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Page Added' }));
       });
-
-      expect(result.current.nodes).toHaveLength(initialNodeCount + 1);
-      expect(result.current.nodes.find(n => n.id === 'new-awesome-page')).toBeDefined();
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Page Added' }));
-    });
 
     it('should show an error toast if a page with the same name exists', () => {
       const { result } = renderHook(() => useHierarchyLogic());
