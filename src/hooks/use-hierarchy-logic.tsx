@@ -18,9 +18,7 @@ export const useHierarchyLogic = () => {
   const { toast } = useToast();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [sectionsMap, setSectionsMap] = useState<{ [id: string]: Section[] }>({
-    home: initialHomeSectionsData,
-  });
+  const [sectionsMap, setSectionsMap] = useState<{ [id: string]: Section[] }>({});
   const [isClient, setIsClient] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,6 +158,29 @@ export const useHierarchyLogic = () => {
       description: `The page "${name.trim()}" has been added.`,
     });
   }, [nodes, edges, setNodes, setEdges, toast]);
+  
+  const addSection = useCallback((nodeId: string, sectionName: string) => {
+    if (!sectionName.trim()) {
+        toast({ title: 'Error', description: 'Section name cannot be empty.', variant: 'destructive' });
+        return;
+    }
+    
+    const newSectionId = generateNodeId(sectionName);
+    const currentNodeSections = sectionsMap[nodeId] || [];
+
+    if (currentNodeSections.find(s => s.id === newSectionId)) {
+        toast({ title: 'Error', description: 'A section with this name already exists.', variant: 'destructive' });
+        return;
+    }
+
+    const newSection: Section = { id: newSectionId, name: sectionName.trim() };
+    setSectionsMap(prev => ({
+        ...prev,
+        [nodeId]: [...currentNodeSections, newSection]
+    }));
+
+    toast({ title: 'Section Added', description: `The section "${sectionName.trim()}" has been added.` });
+  }, [sectionsMap, toast]);
 
   const deletePage = useCallback((nodeId: string) => {
     const toDelete = [nodeId, ...getAllDescendantIds(nodeId, edges)];
@@ -192,17 +213,18 @@ export const useHierarchyLogic = () => {
   const enrichedNodes = useMemo(() => {
     return nodes.map(node => ({
       ...node,
+      dragHandle: '.custom-drag-handle',
       data: {
         ...node.data,
-        dragHandle: '.custom-drag-handle',
         sections: sectionsMap[node.id] || [],
         setSections: (sections: Section[]) => setNodeSections(node.id, sections),
+        onAddSection: (name: string) => addSection(node.id, name),
         onDeleteSection: (sectionId: string) => deleteSection(node.id, sectionId),
         onAddPage: (name: string) => addPage(node.id, name),
         onDeletePage: node.id === 'home' ? undefined : () => deletePage(node.id)
       }
     })) as EnrichedNode[];
-  }, [nodes, sectionsMap, addPage, deletePage, deleteSection]);
+  }, [nodes, sectionsMap, addPage, deletePage, addSection, deleteSection]);
 
   useEffect(() => {
     setIsClient(true);

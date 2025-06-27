@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import VisualHierarchy from '@/components/app';
-import { type Node, type Edge, Position } from 'reactflow';
+import { type Node, type Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 // Minimal mock of ReactFlow
@@ -34,7 +34,7 @@ describe('VisualHierarchy', () => {
 
     const nodes: Node[] = [
         { id: '1', type: 'pageNode', position: { x: 0, y: 0 }, data: { label: 'Node 1' } },
-        { id: '2', type: 'homePageNode', position: { x: 0, y: 100 }, data: { label: 'Node 2' } },
+        { id: '2', type: 'pageNode', position: { x: 0, y: 100 }, data: { label: 'Node 2' } },
     ];
 
     const edges: Edge[] = [

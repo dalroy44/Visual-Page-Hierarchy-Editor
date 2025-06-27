@@ -9,7 +9,7 @@ import HomeSections from './home-sections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, LayoutList, Trash2 } from 'lucide-react';
-import type { Section, PageNodeData } from '@/types';
+import type { PageNodeData } from '@/types';
 
 const iconMap: { [key: string]: React.ComponentType<LucideProps> } = {
   Users: LucideIcons.Users,
@@ -23,32 +23,25 @@ const iconMap: { [key: string]: React.ComponentType<LucideProps> } = {
   MessageSquare: LucideIcons.MessageSquare,
 };
 
-const PageNode = ({ data }: NodeProps<PageNodeData>) => {
+const PageNode = ({ data, id }: NodeProps<PageNodeData>) => {
   const Icon = iconMap[data.icon || 'Default'] || iconMap.Default;
   const [showAddPage, setShowAddPage] = useState(false);
   const [showAddSection, setShowAddSection] = useState(false);
   const [newPageName, setNewPageName] = useState('');
   const [newSectionName, setNewSectionName] = useState('');
 
+  const isRootNode = id === 'home';
+
   const handleAddPage = () => {
     if (data.onAddPage && newPageName.trim()) {
       data.onAddPage(newPageName.trim());
       setNewPageName('');
+      setShowAddPage(false);
     }
   };
 
   const handleAddSection = () => {
-    if (!newSectionName.trim()) return;
-    const newSectionId = newSectionName.trim().toLowerCase().replace(/\s+/g, '-');
-    if (data.sections.find(s => s.id === newSectionId)) {
-      setNewSectionName('');
-      return;
-    }
-    const newSection: Section = {
-      id: newSectionId,
-      name: newSectionName.trim(),
-    };
-    data.setSections([...data.sections, newSection]);
+    data.onAddSection(newSectionName);
     setNewSectionName('');
   };
 
@@ -61,15 +54,17 @@ const PageNode = ({ data }: NodeProps<PageNodeData>) => {
           {data.label}
         </CardTitle>
         <div className="flex gap-1">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7"
-            onClick={() => setShowAddSection((v) => !v)}
-            title="Add Section"
-          >
-            <LayoutList className="w-4 h-4" />
-          </Button>
+          {!isRootNode && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={() => setShowAddSection((v) => !v)}
+              title="Add Section"
+            >
+              <LayoutList className="w-4 h-4" />
+            </Button>
+          )}
           {data.onAddPage && (
             <Button
               size="icon"
@@ -94,25 +89,9 @@ const PageNode = ({ data }: NodeProps<PageNodeData>) => {
           )}
         </div>
       </CardHeader>
-      {showAddSection && (
-        <div className="px-3 pb-2 flex gap-2 items-center">
-          <Input
-            value={newSectionName}
-            onChange={(e) => setNewSectionName(e.target.value)}
-            placeholder="Section name"
-            className="h-8 text-sm"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddSection();
-            }}
-            autoFocus
-          />
-          <Button size="sm" variant="outline" onClick={handleAddSection}>
-            Add
-          </Button>
-        </div>
-      )}
+
       {showAddPage && (
-        <div className="px-3 pb-2 flex gap-2 items-center">
+        <div className="px-3 pb-2 flex gap-2 items-center border-b">
           <Input
             value={newPageName}
             onChange={(e) => setNewPageName(e.target.value)}
@@ -128,10 +107,28 @@ const PageNode = ({ data }: NodeProps<PageNodeData>) => {
           </Button>
         </div>
       )}
+
+      {(showAddSection || isRootNode) && (
+        <div className="px-3 py-3 flex gap-2 items-center border-b">
+          <Input
+            value={newSectionName}
+            onChange={(e) => setNewSectionName(e.target.value)}
+            placeholder="New section name"
+            className="h-8 text-sm"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddSection();
+            }}
+          />
+          <Button size="sm" variant="outline" onClick={handleAddSection}>
+            Add Section
+          </Button>
+        </div>
+      )}
+      
       <CardContent className="p-3 pt-2">
         {data.sections.length === 0 ? (
           <div className="text-muted-foreground text-sm text-center py-4">
-            No sections yet. Click <span className="inline-flex items-center"><LayoutList className="w-4 h-4 mx-1 inline" />Add Section</span> to get started.
+            No sections yet.
           </div>
         ) : (
           <HomeSections

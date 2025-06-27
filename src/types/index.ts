@@ -12,6 +12,7 @@ export interface PageNodeData {
   setSections: (sections: Section[]) => void;
   onAddPage?: (name: string) => void;
   onDeletePage?: () => void;
+  onAddSection: (name: string) => void;
   onDeleteSection?: (sectionId: string) => void;
 }
 

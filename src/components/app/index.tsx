@@ -12,7 +12,6 @@ import ReactFlow, {
   type OnConnect,
 } from 'reactflow';
 import PageNode from './page-node';
-import HomePageNode from './home-page-node';
 
 interface VisualHierarchyProps {
   nodes: Node[];
@@ -32,7 +31,6 @@ export default function VisualHierarchy({
   const nodeTypes = useMemo(
     () => ({
       pageNode: PageNode,
-      homePageNode: HomePageNode,
     }),
     []
   );
@@ -51,7 +49,7 @@ export default function VisualHierarchy({
         proOptions={{ hideAttribution: true }}
       >
         <Controls />
-        {/* <MiniMap nodeColor={(n) => (n.type === 'homePageNode' ? 'hsl(var(--primary))' : '#ddd')} nodeStrokeWidth={3} zoomable pannable /> */}
+        {/* <MiniMap nodeColor={(n) => (n.id === 'home' ? 'hsl(var(--primary))' : '#ddd')} nodeStrokeWidth={3} zoomable pannable /> */}
         <Background gap={16} />
       </ReactFlow>
     </div>
