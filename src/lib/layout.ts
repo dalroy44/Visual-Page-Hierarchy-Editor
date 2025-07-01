@@ -2,7 +2,7 @@ import dagre from 'dagre';
 import { type Node, type Edge, Position } from 'reactflow';
 
 const nodeWidth = 250;   // Match your Card width
-const nodeHeight = 120;  // Increase for more content
+const nodeHeight = 350;  // Increase for more content
 
 export const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   const dagreGraph = new dagre.graphlib.Graph();

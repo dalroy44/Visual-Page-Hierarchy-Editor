@@ -33,11 +33,11 @@ export const useHierarchyLogic = () => {
 
   const handleLoad = useCallback((silent = false) => {
     const savedData = StorageService.load();
-    if (savedData) {
-      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(savedData.nodes, savedData.edges);
-      setNodes(layoutedNodes);
-      setEdges(layoutedEdges);
-      setSectionsMap(savedData.sectionsMap || { home: initialHomeSectionsData });
+    if (savedData && Object.keys(savedData.sectionsMap || {}).length > 0) {
+      // Directly use the saved positions without re-layouting
+      setNodes(savedData.nodes);
+      setEdges(savedData.edges);
+      setSectionsMap(savedData.sectionsMap || {});
       if (!silent) {
         toast({
           title: 'Structure Loaded',
@@ -100,9 +100,9 @@ export const useHierarchyLogic = () => {
 
     try {
       const data = await StorageService.loadFromFile(file);
-      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(data.nodes, data.edges);
-      setNodes(layoutedNodes);
-      setEdges(layoutedEdges);
+      // Directly use the positions from the file without re-layouting
+      setNodes(data.nodes);
+      setEdges(data.edges);
       setSectionsMap(data.sectionsMap || { home: initialHomeSectionsData });
       toast({
         title: 'Structure Loaded',
