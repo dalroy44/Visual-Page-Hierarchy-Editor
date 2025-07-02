@@ -60,6 +60,13 @@ This project uses Jest for unit and integration testing.
 
 ---
 
+## 📺 Demo Video
+
+[![Watch on YouTube](https://img.youtube.com/vi/ysW__SJewFE/0.jpg)](https://youtu.be/ysW__SJewFE)
+
+[Watch the demo video on YouTube](https://youtu.be/ysW__SJewFE)
+
+---
   
   
   
